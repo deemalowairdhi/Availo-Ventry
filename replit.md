@@ -91,6 +91,56 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### `artifacts/ventry` (`@workspace/ventry`)
+
+React + Vite frontend for Availo Ventry. Served at previewPath `/`.
+
+- Built with React, TailwindCSS (v4 via @tailwindcss/vite), shadcn/ui components, wouter router, React Query
+- Uses `@workspace/api-client-react` generated hooks to call the API server
+- Auth: session cookie via `useAuth()` hook in `src/hooks/use-auth.tsx`
+- Pages: Login, Super Admin Dashboard, Portal Dashboard (org admin/vm), Visit Requests, Receptionist Console, Public Booking
+- Layout: `AppLayout` with role-aware sidebar navigation
+- Entry at `src/main.tsx`, app routing in `src/App.tsx`
+- All API calls go to relative `/api/...` paths — platform routes these to port 8080
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+## Availo Ventry — Application Details
+
+Availo Ventry is a full-stack smart visitor management platform for government entities, enterprises, and SMBs.
+
+### Features
+- **6 user roles**: super_admin, org_admin, visitor_manager, receptionist, host_employee, external visitor
+- **Two visitor flows**: host-initiated pre-registered with QR codes, and walk-in self-service with approval queue
+- **Real-time notifications** (in-app)
+- **Bilingual support**: Arabic RTL / English LTR (planned)
+- Session-cookie auth using `express-session`; passwords hashed with SHA-256 + random salt
+
+### Demo Credentials (seeded)
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | admin@t2.sa | Admin@1234 |
+| Org Admin | admin@moi.gov.sa | OrgAdmin@123 |
+| Visitor Manager | vm@moi.gov.sa | Visitor@123 |
+| Receptionist | reception@moi.gov.sa | Recept@123 |
+| Host Employee | employee@moi.gov.sa | Host@1234 |
+
+### API Routes (all under `/api`)
+- `/auth` — login, logout, me, accept-invitation, change-password
+- `/organizations` — CRUD for super_admin
+- `/organizations/:orgId/branches` — branch management
+- `/organizations/:orgId/users` — user management
+- `/organizations/:orgId/invitations` — invitation system
+- `/organizations/:orgId/visitors` — visitor records
+- `/organizations/:orgId/visit-requests` — visit request CRUD, approve/reject, check-in/out
+- `/organizations/:orgId/blacklist` — blacklist management
+- `/organizations/:orgId/audit-logs` — audit trail
+- `/organizations/:orgId/reports` — visitor traffic reports
+- `/dashboard/super-admin` — platform dashboard
+- `/dashboard/org/:orgId` — org dashboard
+- `/dashboard/branch/:branchId` — branch dashboard
+- `/dashboard/host` — host employee dashboard
+- `/notifications` — user notifications
+- `/public/orgs/:slug` — public org info + walk-in booking
