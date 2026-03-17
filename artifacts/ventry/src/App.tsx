@@ -10,6 +10,8 @@ import NotFound from "@/pages/not-found";
 // Pages
 import Login from "@/pages/auth/login";
 import SuperAdminDashboard from "@/pages/super-admin/dashboard";
+import SuperAdminOrganizations from "@/pages/super-admin/organizations";
+import SuperAdminAnalytics from "@/pages/super-admin/analytics";
 import PortalDashboard from "@/pages/portal/dashboard";
 import VisitRequests from "@/pages/portal/visit-requests";
 import ReceptionistDashboard from "@/pages/receptionist/dashboard";
@@ -70,6 +72,12 @@ function Router() {
       {/* Super Admin Routes */}
       <Route path="/super-admin/dashboard">
         {() => <ProtectedRoute component={SuperAdminDashboard} allowedRoles={['super_admin']} />}
+      </Route>
+      <Route path="/super-admin/organizations">
+        {() => <ProtectedRoute component={SuperAdminOrganizations} allowedRoles={['super_admin']} />}
+      </Route>
+      <Route path="/super-admin/analytics">
+        {() => <ProtectedRoute component={SuperAdminAnalytics} allowedRoles={['super_admin']} />}
       </Route>
       
       {/* Portal Routes (Org Admin / Visitor Manager) */}
