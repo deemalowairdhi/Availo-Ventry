@@ -10,11 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, Building2, Phone, Shield, ArrowRight, RefreshCw } from "lucide-react";
+import { CheckCircle2, Building2 } from "lucide-react";
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const bookingSchema = z.object({
   visitorName: z.string().min(2, "Full name is required"),
@@ -27,20 +24,10 @@ const bookingSchema = z.object({
   scheduledTimeFrom: z.string().optional(),
 });
 
-type OtpStep = "idle" | "sending" | "verifying" | "verified";
-
 export default function PublicBooking() {
   const { slug } = useParams<{ slug: string }>();
   const { toast } = useToast();
   const [isSuccess, setIsSuccess] = useState(false);
-
-  // OTP state
-  const [otpStep, setOtpStep] = useState<OtpStep>("idle");
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [otpValue, setOtpValue] = useState("");
-  const [otpError, setOtpError] = useState<string | null>(null);
-  const [otpChannel, setOtpChannel] = useState<"sms" | "whatsapp">("sms");
-  const [otpRequired, setOtpRequired] = useState(false);
 
   const { data: org, isLoading: orgLoading } = useGetPublicOrgInfo(slug);
   const submitMutation = useSubmitPublicVisitRequest();
@@ -59,73 +46,7 @@ export default function PublicBooking() {
     },
   });
 
-  const sendOtpMutation = useMutation({
-    mutationFn: async ({ phone, channel }: { phone: string; channel: "sms" | "whatsapp" }) => {
-      const res = await fetch(`${BASE}/api/verification/send-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, channel }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to send OTP");
-      }
-      return res.json() as Promise<{ success: boolean; sessionId: string; expiresAt: string }>;
-    },
-    onSuccess: (data) => {
-      setSessionId(data.sessionId);
-      setOtpStep("verifying");
-      setOtpError(null);
-    },
-    onError: (e: Error) => {
-      toast({ title: "Failed to send OTP", description: e.message, variant: "destructive" });
-      setOtpStep("idle");
-    },
-  });
-
-  const verifyOtpMutation = useMutation({
-    mutationFn: async ({ sessionId, otp }: { sessionId: string; otp: string }) => {
-      const res = await fetch(`${BASE}/api/verification/verify-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, otp }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Incorrect OTP");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      setOtpStep("verified");
-      setOtpError(null);
-      toast({ title: "Phone verified!", description: "You can now submit your request." });
-    },
-    onError: (e: Error) => {
-      setOtpError(e.message);
-    },
-  });
-
-  const handleSendOtp = () => {
-    const phone = form.getValues("phone");
-    if (!phone || phone.length < 9) {
-      form.setError("phone", { message: "Enter a valid phone number first" });
-      return;
-    }
-    setOtpStep("sending");
-    sendOtpMutation.mutate({ phone, channel: otpChannel });
-  };
-
-  const handleVerifyOtp = () => {
-    if (!sessionId || !otpValue) return;
-    verifyOtpMutation.mutate({ sessionId, otp: otpValue });
-  };
-
   const onSubmit = async (data: z.infer<typeof bookingSchema>) => {
-    if (otpRequired && otpStep !== "verified") {
-      toast({ title: "Phone verification required", description: "Please verify your phone number.", variant: "destructive" });
-      return;
-    }
     try {
       await submitMutation.mutateAsync({ slug, data });
       setIsSuccess(true);
@@ -180,98 +101,15 @@ export default function PublicBooking() {
                   </FormItem>
                 )} />
 
-                {/* Phone with OTP verification */}
                 <FormField control={form.control} name="phone" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-semibold text-slate-700 flex items-center gap-2">
-                      Phone Number
-                      {otpStep === "verified" && <span className="text-emerald-600 text-xs flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Verified</span>}
-                    </FormLabel>
+                    <FormLabel className="font-semibold text-slate-700">Phone Number</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <Input
-                          className="h-12 rounded-xl bg-slate-50 border-slate-200 pr-28"
-                          placeholder="+966 5X XXX XXXX"
-                          {...field}
-                          disabled={otpStep !== "idle"}
-                        />
-                        {otpStep === "idle" && (
-                          <button
-                            type="button"
-                            onClick={handleSendOtp}
-                            className="absolute right-2 top-2 text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-primary/90 transition-colors h-8"
-                          >
-                            Verify
-                          </button>
-                        )}
-                        {otpStep === "verified" && (
-                          <CheckCircle2 className="absolute right-3 top-3.5 w-5 h-5 text-emerald-500" />
-                        )}
-                      </div>
+                      <Input className="h-12 rounded-xl bg-slate-50 border-slate-200" placeholder="+966 5X XXX XXXX" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
-
-                {/* OTP verification panel */}
-                {(otpStep === "sending" || otpStep === "verifying") && (
-                  <div className="col-span-1 sm:col-span-2">
-                    <div className="p-5 bg-blue-50 rounded-2xl border border-blue-100 space-y-4">
-                      <div className="flex items-center gap-2 text-blue-800">
-                        <Shield className="w-4 h-4" />
-                        <p className="font-semibold text-sm">Phone Verification</p>
-                      </div>
-
-                      {otpStep === "sending" ? (
-                        <div className="flex items-center gap-3 text-sm text-blue-700">
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          Sending verification code...
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <p className="text-sm text-blue-700">
-                            A 6-digit code was sent to <strong>{form.getValues("phone")}</strong> via {otpChannel.toUpperCase()}.
-                          </p>
-                          <div className="flex gap-3">
-                            <Input
-                              className="h-12 rounded-xl text-center text-2xl font-mono tracking-widest border-blue-200 bg-white"
-                              placeholder="______"
-                              maxLength={6}
-                              value={otpValue}
-                              onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, ""))}
-                              autoFocus
-                            />
-                            <Button
-                              type="button"
-                              className="h-12 px-6 rounded-xl gap-2"
-                              onClick={handleVerifyOtp}
-                              disabled={verifyOtpMutation.isPending || otpValue.length < 6}
-                            >
-                              {verifyOtpMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-                              Verify
-                            </Button>
-                          </div>
-                          {otpError && <p className="text-sm text-red-600 font-medium">{otpError}</p>}
-                          <button
-                            type="button"
-                            className="text-xs text-blue-600 hover:underline"
-                            onClick={() => { setOtpStep("idle"); setSessionId(null); setOtpValue(""); setOtpError(null); }}
-                          >
-                            Change phone number
-                          </button>
-                          <span className="text-xs text-blue-400 mx-2">·</span>
-                          <button
-                            type="button"
-                            className="text-xs text-blue-600 hover:underline"
-                            onClick={handleSendOtp}
-                          >
-                            Resend code
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 <FormField control={form.control} name="nationalId" render={({ field }) => (
                   <FormItem>
@@ -280,6 +118,7 @@ export default function PublicBooking() {
                     <FormMessage />
                   </FormItem>
                 )} />
+
                 <FormField control={form.control} name="companyName" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-semibold text-slate-700">Representing Company</FormLabel>
@@ -326,6 +165,7 @@ export default function PublicBooking() {
                     <FormMessage />
                   </FormItem>
                 )} />
+
                 <FormField control={form.control} name="scheduledTimeFrom" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-semibold text-slate-700">Expected Time</FormLabel>
@@ -334,26 +174,6 @@ export default function PublicBooking() {
                   </FormItem>
                 )} />
               </div>
-
-              {/* OTP channel selector */}
-              {otpStep === "idle" && (
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                  <p className="text-xs text-slate-600 flex-1">Verify your phone for faster check-in</p>
-                  <div className="flex rounded-lg overflow-hidden border border-slate-200 text-xs">
-                    {(["sms", "whatsapp"] as const).map(ch => (
-                      <button
-                        key={ch}
-                        type="button"
-                        onClick={() => setOtpChannel(ch)}
-                        className={`px-3 py-1.5 font-medium transition-colors ${otpChannel === ch ? "bg-primary text-white" : "bg-white text-slate-600 hover:bg-slate-100"}`}
-                      >
-                        {ch === "sms" ? "SMS" : "WhatsApp"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div className="pt-2">
                 <Button
