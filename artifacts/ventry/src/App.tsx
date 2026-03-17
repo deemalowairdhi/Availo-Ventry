@@ -17,6 +17,10 @@ import VisitRequests from "@/pages/portal/visit-requests";
 import ReceptionistDashboard from "@/pages/receptionist/dashboard";
 import PublicBooking from "@/pages/public/booking";
 import TelegramSettings from "@/pages/settings/telegram";
+import PortalVisitors from "@/pages/portal/visitors";
+import PortalSettings from "@/pages/portal/settings";
+import HostDashboard from "@/pages/host/index";
+import HostNewRequest from "@/pages/host/new";
 
 const queryClient = new QueryClient();
 
@@ -47,7 +51,7 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: any
 function getRoleHome(role: string) {
   if (role === 'super_admin') return '/super-admin/dashboard';
   if (role === 'receptionist') return '/receptionist';
-  if (role === 'host_employee') return '/portal/visit-requests';
+  if (role === 'host_employee') return '/host';
   return '/portal/dashboard';
 }
 
@@ -86,6 +90,20 @@ function Router() {
       </Route>
       <Route path="/portal/visit-requests">
         {() => <ProtectedRoute component={VisitRequests} allowedRoles={['org_admin', 'visitor_manager', 'receptionist', 'host_employee']} />}
+      </Route>
+      <Route path="/portal/visitors">
+        {() => <ProtectedRoute component={PortalVisitors} allowedRoles={['org_admin', 'visitor_manager']} />}
+      </Route>
+      <Route path="/portal/settings">
+        {() => <ProtectedRoute component={PortalSettings} allowedRoles={['org_admin']} />}
+      </Route>
+
+      {/* Host Employee Routes */}
+      <Route path="/host">
+        {() => <ProtectedRoute component={HostDashboard} allowedRoles={['host_employee']} />}
+      </Route>
+      <Route path="/host/new">
+        {() => <ProtectedRoute component={HostNewRequest} allowedRoles={['host_employee']} />}
       </Route>
 
       {/* Receptionist Route */}
