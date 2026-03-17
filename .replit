@@ -27,3 +27,9 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+TELEGRAM_BOT_TOKEN = "8726287953:AAGRvy7Q2mS9Uk2oqxOpSxrO4qKi_AC0h2s"
+AUTHENTICA_API_KEY = "$2y$10$IKrQ05kbVZH1oR0ZSz2uQue6OiqeGKPQoVWpKh1qd2iX7CoVNAyEm"
