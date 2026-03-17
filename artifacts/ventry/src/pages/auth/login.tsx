@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLogin } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -17,10 +18,17 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+function getRoleHome(role: string) {
+  if (role === 'super_admin') return '/super-admin/dashboard';
+  if (role === 'receptionist') return '/receptionist';
+  if (role === 'host_employee') return '/host';
+  return '/portal/dashboard';
+}
+
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const queryClient = useQueryClient();
   
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -32,18 +40,13 @@ export default function Login() {
   const onSubmit = async (data: z.infer<typeof loginSchema>) => {
     try {
       const res = await loginMutation.mutateAsync({ data });
-      toast({
-        title: "Welcome back",
-        description: "Successfully signed in.",
-      });
+      toast({ title: "Welcome back", description: "Successfully signed in." });
       
-      // Route based on role
-      const role = res.user.role;
-      if (role === 'super_admin') setLocation('/super-admin/dashboard');
-      else if (role === 'receptionist') setLocation('/receptionist');
-      else if (role === 'host_employee') setLocation('/host');
-      else setLocation('/portal/dashboard');
+      // Refetch the current user so AuthProvider has fresh data before we navigate
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
       
+      setLocation(getRoleHome(res.user.role));
     } catch (error) {
       toast({
         title: "Login failed",

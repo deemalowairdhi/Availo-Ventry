@@ -26,16 +26,19 @@ const queryClient = new QueryClient();
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component, allowedRoles }: { component: any, allowedRoles?: string[] }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isFetching } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !isFetching && !user) {
       setLocation("/login");
     }
-  }, [isLoading, user, setLocation]);
+  }, [isLoading, isFetching, user, setLocation]);
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50">Loading...</div>;
+  // Wait until we have a definitive answer — either user data or confirmation of no session
+  if ((isLoading || isFetching) && !user) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  }
   if (!user) return null;
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <div className="p-8 text-center text-red-600">Access Denied</div>;
@@ -57,9 +60,9 @@ function getRoleHome(role: string) {
 
 // Redirect root based on role
 function RootRedirect() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isFetching } = useAuth();
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (isLoading || (isFetching && !user)) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   if (!user) return <Redirect to="/login" />;
   return <Redirect to={getRoleHome(user.role)} />;
 }

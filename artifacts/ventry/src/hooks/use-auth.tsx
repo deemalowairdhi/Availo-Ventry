@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 interface AuthContextType {
   user: CurrentUser | null;
   isLoading: boolean;
+  isFetching: boolean;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -16,10 +17,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  const { data: user, isLoading, error } = useGetCurrentUser({
+  const { data: user, isLoading, isFetching } = useGetCurrentUser({
     query: {
       retry: false,
       staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
     }
   });
 
@@ -43,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user: user || null,
         isLoading,
+        isFetching,
         logout: handleLogout,
         isAuthenticated: !!user,
       }}
