@@ -14,6 +14,7 @@ import PortalDashboard from "@/pages/portal/dashboard";
 import VisitRequests from "@/pages/portal/visit-requests";
 import ReceptionistDashboard from "@/pages/receptionist/dashboard";
 import PublicBooking from "@/pages/public/booking";
+import TelegramSettings from "@/pages/settings/telegram";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,11 @@ function Router() {
       {/* Receptionist Route */}
       <Route path="/receptionist">
         {() => <ProtectedRoute component={ReceptionistDashboard} allowedRoles={['receptionist']} />}
+      </Route>
+
+      {/* Settings */}
+      <Route path="/settings/telegram">
+        {() => <ProtectedRoute component={TelegramSettings} />}
       </Route>
       
       <Route component={NotFound} />

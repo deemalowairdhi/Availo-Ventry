@@ -13,6 +13,8 @@ import auditLogsRouter from "./auditLogs.js";
 import reportsRouter from "./reports.js";
 import publicRouter from "./publicRoutes.js";
 import notificationsRouter from "./notifications.js";
+import verificationRouter from "./verification.js";
+import telegramRouter from "./telegram.js";
 
 const router = Router();
 
@@ -30,5 +32,7 @@ router.use("/organizations/:orgId/reports", reportsRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/public", publicRouter);
 router.use("/notifications", notificationsRouter);
+router.use("/verification", verificationRouter);
+router.use("/telegram", telegramRouter);
 
 export default router;

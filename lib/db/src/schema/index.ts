@@ -7,3 +7,5 @@ export * from "./visitRequests";
 export * from "./blacklist";
 export * from "./auditLogs";
 export * from "./notifications";
+export * from "./otpSessions";
+export * from "./telegramSubscriptions";

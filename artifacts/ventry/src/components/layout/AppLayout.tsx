@@ -24,7 +24,8 @@ import {
   LogOut,
   ShieldAlert,
   UserSquare2,
-  ScanLine
+  ScanLine,
+  Send
 } from "lucide-react";
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -47,12 +48,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
           { title: "Visit Requests", url: "/portal/visit-requests", icon: CalendarCheck },
           { title: "Visitors", url: "/portal/visitors", icon: Users },
           { title: "Settings", url: "/portal/settings", icon: Settings },
+          { title: "Telegram Bot", url: "/settings/telegram", icon: Send },
         ];
       case "visitor_manager":
         return [
           { title: "Dashboard", url: "/portal/dashboard", icon: LayoutDashboard },
           { title: "Visit Requests", url: "/portal/visit-requests", icon: CalendarCheck },
           { title: "Visitors", url: "/portal/visitors", icon: Users },
+          { title: "Telegram Bot", url: "/settings/telegram", icon: Send },
         ];
       case "receptionist":
         return [

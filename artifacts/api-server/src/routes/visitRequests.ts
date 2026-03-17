@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm";
 import { requireAuth, requireOrgAccess, requireRole } from "../lib/auth.js";
 import { generateId, generateQrCode, generateToken } from "../lib/id.js";
 import { addHours } from "../lib/dateUtils.js";
+import { notifyVisitApproved, notifyCheckIn, notifyRejection } from "../lib/notifyTelegram.js";
 
 const router = Router({ mergeParams: true });
 
@@ -174,6 +175,20 @@ router.patch("/:requestId/approve", requireAuth, requireOrgAccess, requireRole("
     const updated = await db.select().from(visitRequestsTable).where(eq(visitRequestsTable.id, requestId)).limit(1);
     const enriched = await enrichRequest(updated[0]);
     res.json(enriched);
+
+    // Fire-and-forget Telegram notification
+    if (enriched.visitor) {
+      notifyVisitApproved({
+        visitorName: enriched.visitor.fullName,
+        purpose: enriched.purpose,
+        scheduledDate: enriched.scheduledDate,
+        scheduledTimeFrom: enriched.scheduledTimeFrom,
+        qrCode: enriched.qrCode,
+        trackingToken: enriched.trackingToken,
+        hostUserId: enriched.hostUserId,
+        orgId,
+      }).catch(console.error);
+    }
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -193,6 +208,16 @@ router.patch("/:requestId/reject", requireAuth, requireOrgAccess, requireRole("o
     const updated = await db.select().from(visitRequestsTable).where(eq(visitRequestsTable.id, requestId)).limit(1);
     const enriched = await enrichRequest(updated[0]);
     res.json(enriched);
+
+    if (enriched.visitor) {
+      notifyRejection({
+        visitorName: enriched.visitor.fullName,
+        purpose: enriched.purpose,
+        rejectionReason: enriched.rejectionReason,
+        hostUserId: enriched.hostUserId,
+        orgId,
+      }).catch(console.error);
+    }
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -228,14 +253,27 @@ router.patch("/:requestId/cancel", requireAuth, requireOrgAccess, async (req, re
 router.patch("/:requestId/check-in", requireAuth, requireOrgAccess, requireRole("receptionist", "org_admin", "super_admin"), async (req, res) => {
   try {
     const { orgId, requestId } = req.params;
+    const checkInTime = new Date();
     await db.update(visitRequestsTable).set({
       status: "checked_in",
-      checkInTime: new Date(),
+      checkInTime,
       checkedInById: req.user!.id,
     }).where(and(eq(visitRequestsTable.id, requestId), eq(visitRequestsTable.orgId, orgId)));
     const updated = await db.select().from(visitRequestsTable).where(eq(visitRequestsTable.id, requestId)).limit(1);
     const enriched = await enrichRequest(updated[0]);
     res.json(enriched);
+
+    if (enriched.visitor && enriched.branch) {
+      notifyCheckIn({
+        visitorName: enriched.visitor.fullName,
+        purpose: enriched.purpose,
+        branchName: enriched.branch.name,
+        checkInTime: checkInTime.toLocaleTimeString("en-SA", { hour: "2-digit", minute: "2-digit" }),
+        hostUserId: enriched.hostUserId,
+        hostName: enriched.hostUser?.name,
+        orgId,
+      }).catch(console.error);
+    }
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
   }
